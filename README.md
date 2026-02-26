@@ -43,7 +43,10 @@ cp .env.example .env
 API_KEY=tu-api-key-super-secreta-aqui
 FLASK_ENV=production
 FLASK_DEBUG=False
-RATE_LIMIT_DEFAULT=10 per minute
+
+# Rate Limiting (opcional - ajusta según necesidades)
+RATE_LIMIT_API_CONVERT=10 per minute
+# Usa 'unlimited' para sin límite
 ```
 
 3. Levanta el servicio:
@@ -83,9 +86,42 @@ curl -X POST http://localhost:5000/api/convert \
 
 **Protecciones de seguridad:**
 - ✅ Autenticación obligatoria con API Key
-- ✅ Rate limiting (10 peticiones/minuto por defecto en endpoints de conversión)
+- ✅ Rate limiting configurable (10 peticiones/minuto por defecto)
 - ✅ Validación de entrada
 - ✅ Protección contra fuerza bruta
+
+### Configuración de Rate Limiting
+
+El rate limiting es **completamente configurable** desde el archivo `.env`:
+
+**Valores disponibles por endpoint:**
+```env
+# Interfaz web
+RATE_LIMIT_WEB_INDEX=20 per minute      # Página principal
+RATE_LIMIT_WEB_CONVERT=10 per minute    # Conversión desde formulario
+
+# API REST
+RATE_LIMIT_API_CONVERT=10 per minute    # Conversión desde API
+RATE_LIMIT_API_HEALTH=60 per minute     # Health check
+```
+
+**Formatos válidos:**
+- `"10 per minute"` - 10 peticiones por minuto
+- `"100 per hour"` - 100 peticiones por hora
+- `"1000 per day"` - 1000 peticiones por día
+- `"unlimited"` o `"0"` - Sin límite (ilimitado)
+
+**Ejemplos de uso:**
+```env
+# Para uso personal (sin límites)
+RATE_LIMIT_API_CONVERT=unlimited
+
+# Para servidor público (límites estrictos)
+RATE_LIMIT_API_CONVERT=5 per minute
+
+# Para uso interno empresarial (límites altos)
+RATE_LIMIT_API_CONVERT=1000 per hour
+```
 
 ## Requisitos
 
@@ -350,7 +386,7 @@ md-to-pdf/
 
 La aplicación incluye múltiples capas de seguridad:
 - ✅ **Autenticación con API Key OBLIGATORIA** para todos los endpoints (excepto healthcheck)
-- ✅ **Rate Limiting** (10 peticiones/minuto en endpoints de conversión, 20/min en index, 60/min en health)
+- ✅ **Rate Limiting Configurable** - Ajusta límites o desactívalo con `unlimited` en `.env`
 - ✅ Límite de tamaño de archivo (16MB)
 - ✅ Validación estricta de entrada
 - ✅ Timeout de operaciones
@@ -361,7 +397,10 @@ La aplicación incluye múltiples capas de seguridad:
 - ⚠️ Configura SIEMPRE una API Key fuerte: `openssl rand -hex 32`
 - ⚠️ Usa HTTPS (configura un proxy reverso con nginx)
 - ⚠️ Cambia `FLASK_DEBUG=False`
-- ⚠️ Ajusta los límites de rate limiting según tus necesidades en `.env`
+- ⚠️ Ajusta los límites de rate limiting según tus necesidades:
+  - Uso personal: `unlimited`
+  - Servidor público: `5-10 per minute`
+  - Uso empresarial: `1000 per hour`
 - ⚠️ Monitorea los logs para detectar intentos de acceso no autorizado
 
 ## Producción

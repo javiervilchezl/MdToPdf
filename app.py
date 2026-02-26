@@ -34,6 +34,17 @@ limiter = Limiter(
 )
 
 
+def get_rate_limit(env_var, default):
+    """
+    Helper para obtener rate limit desde variable de entorno.
+    Convierte 'unlimited', '0' o '' a un valor muy alto (ilimitado).
+    """
+    limit = os.getenv(env_var, default)
+    if limit.lower() in ['unlimited', '0', '']:
+        return '100000 per hour'  # Prácticamente ilimitado
+    return limit
+
+
 def require_api_key(f):
     """
     Decorador para requerir API Key en todos los endpoints.
@@ -331,7 +342,7 @@ def process_markdown_to_pdf(markdown_content):
 
 
 @app.route('/')
-@limiter.limit("20 per minute")
+@limiter.limit(lambda: get_rate_limit('RATE_LIMIT_WEB_INDEX', '20 per minute'))
 @require_api_key
 def index():
     """Página principal con el formulario"""
@@ -339,7 +350,9 @@ def index():
 
 
 @app.route('/convert', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit(
+    lambda: get_rate_limit('RATE_LIMIT_WEB_CONVERT', '10 per minute')
+)
 @require_api_key
 def convert_to_pdf():
     """Endpoint web: Convierte el contenido Markdown a PDF desde formulario"""
@@ -360,7 +373,9 @@ def convert_to_pdf():
 
 
 @app.route('/api/convert', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit(
+    lambda: get_rate_limit('RATE_LIMIT_API_CONVERT', '10 per minute')
+)
 @require_api_key
 def api_convert_to_pdf():
     """
@@ -397,7 +412,9 @@ def api_convert_to_pdf():
 
 
 @app.route('/api/health', methods=['GET'])
-@limiter.limit("60 per minute")
+@limiter.limit(
+    lambda: get_rate_limit('RATE_LIMIT_API_HEALTH', '60 per minute')
+)
 def api_health():
     """Endpoint de healthcheck para monitoreo (sin autenticación)"""
     return jsonify({
