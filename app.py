@@ -343,9 +343,8 @@ def process_markdown_to_pdf(markdown_content):
 
 @app.route('/')
 @limiter.limit(lambda: get_rate_limit('RATE_LIMIT_WEB_INDEX', '20 per minute'))
-@require_api_key
 def index():
-    """Página principal con el formulario"""
+    """Página principal con el formulario (sin autenticación para ver el form)"""
     return render_template('index.html')
 
 

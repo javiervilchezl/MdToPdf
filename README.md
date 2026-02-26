@@ -27,7 +27,13 @@ El microservicio incluye un **sistema de autenticación con API Key OBLIGATORIA*
 
 ### ⚠️ IMPORTANTE: API Key Obligatoria
 
-**La API Key es SIEMPRE requerida** para acceder tanto a la interfaz web como a la API REST. Sin ella, la aplicación no funcionará.
+**La API Key es SIEMPRE requerida** para:
+- ✅ Generar PDFs desde la interfaz web (`/convert`)
+- ✅ Usar la API REST (`/api/convert`)
+
+**Acceso público (sin API Key):**
+- ✅ Ver la interfaz web (`/`) - para que puedas ingresar tu API Key
+- ✅ Health check (`/api/health`) - para monitoreo de Docker/Kubernetes
 
 ### Configuración de API Key
 
@@ -79,7 +85,7 @@ curl -X POST http://localhost:5000/api/convert \
 ```
 
 **Notas importantes sobre endpoints:**
-- **`/`** - Interfaz web: **Requiere API Key** (campo en el formulario)
+- **`/`** - Interfaz web: **Público** (para ver el formulario)
 - **`/convert`** - Conversión web: **Requiere API Key** (enviada desde formulario)
 - **`/api/convert`** - API REST: **Requiere API Key** (header X-API-Key)
 - **`/api/health`** - Healthcheck: **Público** (no requiere API Key)
@@ -183,10 +189,17 @@ python app.py
 
 ## Cómo usar
 
-1. Abre la aplicación en tu navegador
-2. Escribe o pega tu contenido Markdown en el área de texto
-3. Haz clic en "Generar PDF"
-4. El PDF se descargará automáticamente
+### Interfaz Web
+
+1. Abre la aplicación en tu navegador: `http://localhost:5000`
+2. **Ingresa tu API Key** en el campo correspondiente (se guarda en tu navegador)
+3. Escribe o pega tu contenido Markdown en el área de texto
+4. Haz clic en "Generar PDF"
+5. El PDF se descargará automáticamente
+
+### API REST
+
+Usa el header `X-API-Key` para autenticarte (ver sección "Uso de la API REST" más abajo).
 
 ## Uso de la API REST
 
