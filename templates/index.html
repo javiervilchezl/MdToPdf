@@ -48,6 +48,54 @@
             margin-bottom: 20px;
         }
         
+        .api-key-group {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 2px solid #f59f72;
+        }
+        
+        .api-key-group label {
+            color: #8b4513;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="password"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #f59f72;
+        }
+        
+        .toggle-password {
+            position: relative;
+        }
+        
+        .toggle-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 18px;
+        }
+        
         label {
             display: block;
             color: #333;
@@ -187,6 +235,27 @@
         <p class="subtitle">Convierte tu contenido Markdown a PDF de forma sencilla</p>
         
         <form id="convertForm" method="POST" action="/convert">
+            <div class="api-key-group">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="api_key">API Key (requerida):</label>
+                    <div class="toggle-password">
+                        <input 
+                            type="password" 
+                            id="api_key" 
+                            name="api_key" 
+                            placeholder="Ingresa tu API Key..."
+                            required
+                        >
+                        <button type="button" class="toggle-btn" onclick="togglePassword()" title="Mostrar/Ocultar">
+                            👁️
+                        </button>
+                    </div>
+                    <small style="color: #8b4513; display: block; margin-top: 8px;">
+                        Tu API Key se guarda localmente en tu navegador
+                    </small>
+                </div>
+            </div>
+            
             <div class="form-group">
                 <label for="markdown_content">Escribe o pega tu contenido Markdown:</label>
                 <textarea 
@@ -227,8 +296,23 @@
     <script>
         const form = document.getElementById('convertForm');
         const loading = document.getElementById('loading');
+        const apiKeyInput = document.getElementById('api_key');
+        
+        // Cargar API Key guardada al inicio
+        window.addEventListener('DOMContentLoaded', function() {
+            const savedApiKey = localStorage.getItem('mdtopdf_apikey');
+            if (savedApiKey) {
+                apiKeyInput.value = savedApiKey;
+            }
+        });
         
         form.addEventListener('submit', function(e) {
+            // Guardar API Key en localStorage
+            const apiKey = apiKeyInput.value.trim();
+            if (apiKey) {
+                localStorage.setItem('mdtopdf_apikey', apiKey);
+            }
+            
             loading.style.display = 'block';
             
             // Ocultar el loading después de 2 segundos (tiempo razonable para la descarga)
@@ -236,6 +320,11 @@
                 loading.style.display = 'none';
             }, 2000);
         });
+        
+        function togglePassword() {
+            const input = document.getElementById('api_key');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
         
         function clearContent() {
             document.getElementById('markdown_content').value = '';

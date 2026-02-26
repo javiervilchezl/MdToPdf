@@ -8,13 +8,13 @@ services:
       - "5000:5000"
     volumes:
       - .:/app
+    env_file:
+      - .env  # Carga las variables desde el archivo .env
     environment:
-      - FLASK_ENV=development
-      - FLASK_DEBUG=True
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3

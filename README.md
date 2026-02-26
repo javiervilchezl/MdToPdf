@@ -19,6 +19,73 @@ Microservicio dockerizado en Python para convertir archivos Markdown a PDF. Disp
 - Diseño PDF profesional con estilos CSS personalizados
 - Dockerizado para fácil despliegue
 - Descarga automática del PDF generado
+- **Autenticación con API Key** para proteger endpoints
+
+## Seguridad
+
+El microservicio incluye un **sistema de autenticación con API Key OBLIGATORIA** para proteger todos los endpoints.
+
+### ⚠️ IMPORTANTE: API Key Obligatoria
+
+**La API Key es SIEMPRE requerida** para acceder tanto a la interfaz web como a la API REST. Sin ella, la aplicación no funcionará.
+
+### Configuración de API Key
+
+**Configuración inicial (OBLIGATORIA):**
+
+1. Copia el archivo de ejemplo:
+```bash
+cp .env.example .env
+```
+
+2. Edita `.env` y configura tu API Key:
+```env
+API_KEY=tu-api-key-super-secreta-aqui
+FLASK_ENV=production
+FLASK_DEBUG=False
+RATE_LIMIT_DEFAULT=10 per minute
+```
+
+3. Levanta el servicio:
+```bash
+docker-compose up
+```
+
+O configura directamente en `docker-compose.yml`:
+```yaml
+environment:
+  - API_KEY=tu-api-key-super-secreta-aqui
+```
+
+**Recomendaciones de seguridad:**
+- Genera una API Key fuerte: `openssl rand -hex 32`
+- Nunca compartas tu API Key públicamente
+- Rota la API Key periódicamente
+- Guarda el archivo `.env` en un lugar seguro (nunca lo subas a Git)
+
+### Uso con API Key
+
+Incluye el header `X-API-Key` en tus peticiones al endpoint `/api/convert`:
+
+```bash
+curl -X POST http://localhost:5000/api/convert \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: tu-api-key-super-secreta-aqui" \
+  -d '{"markdown": "# Hola"}' \
+  --output documento.pdf
+```
+
+**Notas importantes sobre endpoints:**
+- **`/`** - Interfaz web: **Requiere API Key** (campo en el formulario)
+- **`/convert`** - Conversión web: **Requiere API Key** (enviada desde formulario)
+- **`/api/convert`** - API REST: **Requiere API Key** (header X-API-Key)
+- **`/api/health`** - Healthcheck: **Público** (no requiere API Key)
+
+**Protecciones de seguridad:**
+- ✅ Autenticación obligatoria con API Key
+- ✅ Rate limiting (10 peticiones/minuto por defecto en endpoints de conversión)
+- ✅ Validación de entrada
+- ✅ Protección contra fuerza bruta
 
 ## Requisitos
 
@@ -92,10 +159,13 @@ python app.py
 #### `POST /api/convert`
 Convierte Markdown a PDF. Acepta JSON y retorna un archivo PDF.
 
-**Request:**
+**⚠️ Requiere API Key OBLIGATORIAMENTE**
+
+**Request (con autenticación):**
 ```bash
 curl -X POST http://localhost:5000/api/convert \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: tu-api-key-super-secreta-aqui" \
   -d '{"markdown": "# Hola Mundo\n\nEsto es **negrita**"}' \
   --output documento.pdf
 ```
@@ -110,6 +180,8 @@ curl -X POST http://localhost:5000/api/convert \
 **Response:** 
 - Success (200): Archivo PDF binario
 - Error (400): `{"error": "mensaje de error"}`
+- Error (401): `{"error": "API Key requerida", "message": "Incluye el header X-API-Key en tu petición"}`
+- Error (403): `{"error": "API Key inválida", "message": "La API Key proporcionada no es válida"}`
 - Error (500): `{"error": "mensaje de error"}`
 
 #### `GET /api/health`
@@ -153,9 +225,16 @@ Este es un documento de prueba.
 | Dato A    | Dato B    |
 """
 
+# Headers con API Key (OBLIGATORIA)
+headers = {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'tu-api-key-super-secreta-aqui'  # REQUERIDA
+}
+
 response = requests.post(
     'http://localhost:5000/api/convert',
-    json={'markdown': markdown_content}
+    json={'markdown': markdown_content},
+    headers=headers
 )
 
 if response.status_code == 200:
@@ -163,7 +242,7 @@ if response.status_code == 200:
         f.write(response.content)
     print("PDF generado exitosamente")
 else:
-    print(f"Error: {response.json()}")
+    print(f"Error {response.status_code}: {response.json()}")
 ```
 
 **Con JavaScript/Node.js:**
@@ -177,15 +256,26 @@ const markdown = `
 Texto con **formato**.
 `;
 
+// Headers con API Key (OBLIGATORIA)
+const headers = {
+  'Content-Type': 'application/json',
+  'X-API-Key': 'tu-api-key-super-secreta-aqui'  // REQUERIDA
+};
+
 fetch('http://localhost:5000/api/convert', {
   method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+  headers: headers,
   body: JSON.stringify({ markdown })
 })
-.then(res => res.buffer())
-.then(buffer => {
-  fs.writeFileSync('documento.pdf', buffer);
-  console.log('PDF generado');
+.then(async res => {
+  if (res.ok) {
+    const buffer = await res.buffer();
+    fs.writeFileSync('documento.pdf', buffer);
+    console.log('PDF generado');
+  } else {
+    const error = await res.json();
+    console.error(`Error ${res.status}:`, error);
+  }
 })
 .catch(err => console.error('Error:', err));
 ```
@@ -258,23 +348,57 @@ md-to-pdf/
 
 ## Configuración de Seguridad
 
-La aplicación incluye:
-- Límite de tamaño de archivo (16MB)
-- Validación de entrada
-- Timeout de operaciones
+La aplicación incluye múltiples capas de seguridad:
+- ✅ **Autenticación con API Key OBLIGATORIA** para todos los endpoints (excepto healthcheck)
+- ✅ **Rate Limiting** (10 peticiones/minuto en endpoints de conversión, 20/min en index, 60/min en health)
+- ✅ Límite de tamaño de archivo (16MB)
+- ✅ Validación estricta de entrada
+- ✅ Timeout de operaciones
+- ✅ Headers de seguridad HTTP
+- ✅ Protección contra fuerza bruta
+
+**IMPORTANTE para producción:**
+- ⚠️ Configura SIEMPRE una API Key fuerte: `openssl rand -hex 32`
+- ⚠️ Usa HTTPS (configura un proxy reverso con nginx)
+- ⚠️ Cambia `FLASK_DEBUG=False`
+- ⚠️ Ajusta los límites de rate limiting según tus necesidades en `.env`
+- ⚠️ Monitorea los logs para detectar intentos de acceso no autorizado
 
 ## Producción
 
 Para deploying en producción, considera:
 
-1. Cambiar `debug=True` a `debug=False` en `app.py`
-2. Usar un servidor WSGI como Gunicorn:
+1. **Configurar API Key:**
+   ```bash
+   export API_KEY="tu-api-key-super-secreta-y-larga-aqui-$(openssl rand -hex 32)"
+   ```
+
+2. **Desactivar debug mode:**
+   ```env
+   FLASK_ENV=production
+   FLASK_DEBUG=False
+   ```
+
+3. Usar un servidor WSGI como Gunicorn:
    ```bash
    gunicorn -w 4 -b 0.0.0.0:5000 app:app
    ```
-3. Configurar variables de entorno apropiadas
-4. Implementar autenticación si es necesario
-5. Configurar un proxy reverso (nginx)
+
+4. **Configurar un proxy reverso (nginx) con HTTPS:**
+   ```nginx
+   server {
+       listen 443 ssl;
+       server_name tu-dominio.com;
+       
+       location / {
+           proxy_pass http://localhost:5000;
+           proxy_set_header X-API-Key $http_x_api_key;
+       }
+   }
+   ```
+
+5. **Limitar rate limiting** con nginx o un load balancer
+6. **Monitorear** usando el endpoint `/api/health`
 
 ## Licencia
 
