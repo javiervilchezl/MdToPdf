@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown to PDF Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 900px;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 400px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+        
+        .example {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        
+        .example h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .example code {
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .example ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .example li {
+            margin: 5px 0;
+            color: #555;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            textarea {
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Markdown to PDF</h1>
+        <p class="subtitle">Convierte tu contenido Markdown a PDF de forma sencilla</p>
+        
+        <form id="convertForm" method="POST" action="/convert">
+            <div class="form-group">
+                <label for="markdown_content">Escribe o pega tu contenido Markdown:</label>
+                <textarea 
+                    id="markdown_content" 
+                    name="markdown_content" 
+                    placeholder="# Mi Documento&#10;&#10;## Introducción&#10;&#10;Este es un ejemplo de **Markdown**. Puedes usar:&#10;&#10;- Listas&#10;- *Cursiva* y **negrita**&#10;- [Enlaces](https://ejemplo.com)&#10;- Y mucho más...&#10;&#10;```python&#10;def hola():&#10;    print('¡Hola Mundo!')&#10;```"
+                    required
+                ></textarea>
+            </div>
+            
+            <div class="button-group">
+                <button type="submit">Generar PDF</button>
+                <button type="button" class="btn-secondary" onclick="clearContent()">Limpiar</button>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Generando PDF...</p>
+            </div>
+        </form>
+        
+        <div class="example">
+            <h3>Sintaxis Markdown soportada:</h3>
+            <ul>
+                <li><code>#</code> Encabezados (H1 a H6)</li>
+                <li><code>**negrita**</code> y <code>*cursiva*</code></li>
+                <li><code>- item</code> Listas (ordenadas y desordenadas)</li>
+                <li><code>[texto](url)</code> Enlaces</li>
+                <li><code>![alt](url)</code> Imágenes</li>
+                <li><code>```código```</code> Bloques de código</li>
+                <li><code>| tabla |</code> Tablas</li>
+                <li><code>> cita</code> Citas</li>
+                <li><code>~~tachado~~</code> Texto tachado</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('convertForm');
+        const loading = document.getElementById('loading');
+        
+        form.addEventListener('submit', function(e) {
+            loading.style.display = 'block';
+            
+            // Ocultar el loading después de 2 segundos (tiempo razonable para la descarga)
+            setTimeout(function() {
+                loading.style.display = 'none';
+            }, 2000);
+        });
+        
+        function clearContent() {
+            document.getElementById('markdown_content').value = '';
+        }
+        
+        // Atajos de teclado útiles
+        document.getElementById('markdown_content').addEventListener('keydown', function(e) {
+            // Tab para insertar 4 espacios
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+                this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        });
+    </script>
+</body>
+</html>
