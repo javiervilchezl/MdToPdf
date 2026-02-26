@@ -1,10 +1,11 @@
 # Markdown to PDF
 
-Aplicación dockerizada en Python para convertir archivos Markdown a PDF con una interfaz web sencilla.
+Microservicio dockerizado en Python para convertir archivos Markdown a PDF. Disponible como interfaz web y API REST.
 
 ## Características
 
-- Interfaz web intuitiva con textarea
+- **Interfaz web** intuitiva con textarea
+- **API REST** para integración con otros sistemas
 - Conversión de Markdown a PDF en tiempo real
 - Soporte completo de sintaxis Markdown:
   - Encabezados (H1-H6)
@@ -83,6 +84,111 @@ python app.py
 2. Escribe o pega tu contenido Markdown en el área de texto
 3. Haz clic en "Generar PDF"
 4. El PDF se descargará automáticamente
+
+## Uso de la API REST
+
+### Endpoints Disponibles
+
+#### `POST /api/convert`
+Convierte Markdown a PDF. Acepta JSON y retorna un archivo PDF.
+
+**Request:**
+```bash
+curl -X POST http://localhost:5000/api/convert \
+  -H "Content-Type: application/json" \
+  -d '{"markdown": "# Hola Mundo\n\nEsto es **negrita**"}' \
+  --output documento.pdf
+```
+
+**Request Body:**
+```json
+{
+  "markdown": "# Tu contenido Markdown aquí..."
+}
+```
+
+**Response:** 
+- Success (200): Archivo PDF binario
+- Error (400): `{"error": "mensaje de error"}`
+- Error (500): `{"error": "mensaje de error"}`
+
+#### `GET /api/health`
+Endpoint de healthcheck para monitoreo.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "service": "markdown-to-pdf",
+  "version": "1.0.0"
+}
+```
+
+### Ejemplos de Uso
+
+**Con cURL:**
+```bash
+# Convertir Markdown desde línea de comando
+curl -X POST http://localhost:5000/api/convert \
+  -H "Content-Type: application/json" \
+  -d @- --output resultado.pdf << 'EOF'
+{
+  "markdown": "# Mi Documento\n\n## Sección 1\n\nContenido con **negrita** y *cursiva*.\n\n- Item 1\n- Item 2"
+}
+EOF
+```
+
+**Con Python:**
+```python
+import requests
+
+markdown_content = """
+# Mi Documento
+
+## Introducción
+Este es un documento de prueba.
+
+| Columna 1 | Columna 2 |
+|-----------|-----------|
+| Dato A    | Dato B    |
+"""
+
+response = requests.post(
+    'http://localhost:5000/api/convert',
+    json={'markdown': markdown_content}
+)
+
+if response.status_code == 200:
+    with open('resultado.pdf', 'wb') as f:
+        f.write(response.content)
+    print("PDF generado exitosamente")
+else:
+    print(f"Error: {response.json()}")
+```
+
+**Con JavaScript/Node.js:**
+```javascript
+const fs = require('fs');
+const fetch = require('node-fetch');
+
+const markdown = `
+# Mi Documento
+## Contenido
+Texto con **formato**.
+`;
+
+fetch('http://localhost:5000/api/convert', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ markdown })
+})
+.then(res => res.buffer())
+.then(buffer => {
+  fs.writeFileSync('documento.pdf', buffer);
+  console.log('PDF generado');
+})
+.catch(err => console.error('Error:', err));
+```
 
 ## Ejemplo de Markdown
 
